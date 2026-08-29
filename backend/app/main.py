@@ -2,8 +2,8 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 
 from app.database import engine
-from app.models import Customer
-from app.schemas import CustomerCreate
+from app.models import Customer, Request
+from app.schemas import CustomerCreate, RequestCreate
 app = FastAPI()
 
 
@@ -35,3 +35,20 @@ def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
 def get_customers(db: Session = Depends(get_db)):
     customers = db.query(Customer).all()
     return customers
+
+
+
+
+
+@app.post("/requests")
+def create_request(request: RequestCreate, db: Session = Depends(get_db)):
+    new_request = Request(
+        customer_id=request.customer_id,
+        raw_text=request.raw_text,
+    )
+
+    db.add(new_request)
+    db.commit()
+    db.refresh(new_request)
+
+    return new_request
