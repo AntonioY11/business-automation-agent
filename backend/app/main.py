@@ -29,3 +29,9 @@ def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
     db.refresh(new_customer)
 
     return new_customer
+
+
+@app.get("/customers")
+def get_customers(db: Session = Depends(get_db)):
+    customers = db.query(Customer).all()
+    return customers
