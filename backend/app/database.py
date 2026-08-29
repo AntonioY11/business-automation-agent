@@ -1,9 +1,5 @@
-import psycopg
+from sqlalchemy import create_engine
 
-DATABASE_URL = (
-    "postgresql://admin:password@localhost:5432/business_automation"
-)
+DATABASE_URL = "postgresql+psycopg://admin:password@localhost:5432/business_automation"
 
-
-def get_connection():
-    return psycopg.connect(DATABASE_URL)
+engine = create_engine(DATABASE_URL)
