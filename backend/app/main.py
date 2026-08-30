@@ -60,6 +60,7 @@ def create_request(request: RequestCreate, db: Session = Depends(get_db)):
 
     new_request.intent = analysis.intent
     new_request.priority = analysis.priority
+    new_request.account_id = analysis.account_id
 
     db.commit()
     db.refresh(new_request)

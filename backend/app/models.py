@@ -25,3 +25,4 @@ class Request(Base):
     intent: Mapped[str | None] = mapped_column(String(100), nullable=True)
     priority: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    account_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
