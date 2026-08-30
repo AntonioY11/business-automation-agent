@@ -4,6 +4,11 @@ from sqlalchemy.orm import Session
 from app.database import engine
 from app.models import Customer, Request
 from app.schemas import CustomerCreate, RequestCreate
+
+
+from app.agent import analyze_request
+
+
 app = FastAPI()
 
 
@@ -48,6 +53,14 @@ def create_request(request: RequestCreate, db: Session = Depends(get_db)):
     )
 
     db.add(new_request)
+    db.commit()
+    db.refresh(new_request)
+
+    analysis = analyze_request(request.raw_text)
+
+    new_request.intent = analysis.intent
+    new_request.priority = analysis.priority
+
     db.commit()
     db.refresh(new_request)
 

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-
+from typing import Literal
 
 class CustomerCreate(BaseModel):
     name: str
@@ -10,3 +10,15 @@ class CustomerCreate(BaseModel):
 class RequestCreate(BaseModel):
     customer_id: int
     raw_text: str
+
+
+class AIRequestAnalysis(BaseModel):
+    intent: Literal[
+        "refund_request",
+        "cancel_subscription",
+        "address_change",
+        "account_question",
+        "create_support_ticket",
+    ]
+    priority: Literal["low", "normal", "high"]
+    account_id: str | None = None
