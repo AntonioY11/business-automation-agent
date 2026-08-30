@@ -15,6 +15,16 @@ class Customer(Base):
     subscription_status: Mapped[str] = mapped_column(String(50))
 
 
+class Account(Base):
+    __tablename__ = "accounts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    account_id: Mapped[str] = mapped_column(String(100), unique=True)
+    customer_id: Mapped[int] = mapped_column()
+    subscription_status: Mapped[str] = mapped_column(String(50))
+
+
+
 class Request(Base):
     __tablename__ = "requests"
 
