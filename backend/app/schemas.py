@@ -12,6 +12,12 @@ class RequestCreate(BaseModel):
     raw_text: str
 
 
+class AccountCreate(BaseModel):
+    account_id: str
+    customer_id: int
+    subscription_status: str
+
+
 class AIRequestAnalysis(BaseModel):
     intent: Literal[
         "refund_request",
