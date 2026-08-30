@@ -9,6 +9,8 @@ from app.schemas import AccountCreate, CustomerCreate, RequestCreate
 from app.agent import analyze_request
 
 
+from app.actions import execute_action
+
 app = FastAPI()
 
 
@@ -71,34 +73,6 @@ def get_account(account_id: str, db: Session = Depends(get_db)):
 
 
 
-def cancel_subscription(account_id: str, db: Session):
-    account = db.query(Account).filter(
-        Account.account_id == account_id
-    ).first()
-
-    if not account:
-        return {"success": False, "message": "Account not found"}
-
-    if account.subscription_status == "cancelled":
-        return {"success": False, "message": "Subscription is already cancelled"}
-
-    account.subscription_status = "cancelled"
-
-    db.commit()
-    db.refresh(account)
-
-    return {
-        "success": True,
-        "message": "Subscription cancelled successfully",
-        "account_id": account.account_id,
-    }
-
-
-
-@app.post("/accounts/{account_id}/cancel")
-def cancel_account(account_id: str, db: Session = Depends(get_db)):
-    return cancel_subscription(account_id, db)
-
 
 
 @app.post("/requests")
@@ -112,6 +86,9 @@ def create_request(request: RequestCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_request)
 
+    new_request.status = "processing"
+    db.commit()
+
     analysis = analyze_request(request.raw_text)
 
     new_request.intent = analysis.intent
@@ -119,6 +96,22 @@ def create_request(request: RequestCreate, db: Session = Depends(get_db)):
     new_request.account_id = analysis.account_id
 
     db.commit()
+    action_result = execute_action(
+        analysis.intent,
+        analysis.account_id,
+        db,
+    )
+
+    if action_result["success"]:
+        new_request.status = "completed"
+    else:
+        new_request.status = "failed"
+
+    db.commit()
+
     db.refresh(new_request)
 
-    return new_request
+    return {
+        "request": new_request,
+        "action": action_result,
+    }
