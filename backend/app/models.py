@@ -13,6 +13,7 @@ class Customer(Base):
     name: Mapped[str] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(255), unique=True)
     subscription_status: Mapped[str] = mapped_column(String(50))
+    address: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
 
 class Account(Base):

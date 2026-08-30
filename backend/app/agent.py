@@ -28,7 +28,7 @@ Determine:
 - the customer's intent
 - the priority
 - the account ID if one is provided
-
+- the new address if the customer is requesting an address change
 Customer request:
 {text}
 """,

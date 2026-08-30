@@ -99,6 +99,8 @@ def create_request(request: RequestCreate, db: Session = Depends(get_db)):
     action_result = execute_action(
         analysis.intent,
         analysis.account_id,
+        request.customer_id,
+        analysis.new_address,
         db,
     )
 
@@ -113,5 +115,6 @@ def create_request(request: RequestCreate, db: Session = Depends(get_db)):
 
     return {
         "request": new_request,
+        "analysis": analysis,
         "action": action_result,
     }
