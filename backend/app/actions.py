@@ -131,8 +131,6 @@ def create_refund_request(
 def cancel_subscription_tool(
     account_id: str | None,
     customer_id: int,
-    new_address: str | None,
-    refund_reason: str | None,
     db: Session,
 ):
     if not account_id:
@@ -141,14 +139,17 @@ def cancel_subscription_tool(
             "message": "Account ID is required for cancellation",
         }
 
-    return cancel_subscription(account_id, customer_id, db)
+    return cancel_subscription(
+        account_id,
+        customer_id,
+        db,
+    )
 
 
 def change_address_tool(
     account_id: str | None,
     customer_id: int,
     new_address: str | None,
-    refund_reason: str | None,
     db: Session,
 ):
     if not account_id:
@@ -174,7 +175,6 @@ def change_address_tool(
 def refund_request_tool(
     account_id: str | None,
     customer_id: int,
-    new_address: str | None,
     refund_reason: str | None,
     db: Session,
 ):
