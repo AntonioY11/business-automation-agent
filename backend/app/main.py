@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 
 from app.database import engine
-from app.models import Account, Customer, Request, Conversation
+from app.models import Account, Customer, Request, Conversation, Approval
 from app.schemas import AccountCreate, CustomerCreate, RequestCreate, MessageCreate
 
 
@@ -71,6 +71,102 @@ def get_account(account_id: str, db: Session = Depends(get_db)):
 
     return account
 
+
+@app.get("/approvals")
+def get_pending_approvals(
+    db: Session = Depends(get_db),
+):
+    approvals = db.query(Approval).filter(
+        Approval.status == "pending"
+    ).all()
+
+    return approvals
+
+
+@app.post("/approvals/{approval_id}/approve")
+def approve_approval(
+    approval_id: int,
+    db: Session = Depends(get_db),
+):
+    approval = db.query(Approval).filter(
+        Approval.id == approval_id
+    ).first()
+
+    if not approval:
+        return {
+            "success": False,
+            "message": "Approval not found",
+        }
+
+    if approval.status != "pending":
+        return {
+            "success": False,
+            "message": "Approval is no longer pending",
+        }
+
+    result = execute_action(
+        approval.intent,
+        approval.account_id,
+        approval.customer_id,
+        approval.new_address,
+        approval.refund_reason,
+        db,
+    )
+
+    if not result["success"]:
+        return {
+            "success": False,
+            "message": "Operation failed",
+            "approval_id": approval.id,
+            "result": result,
+        }
+
+    approval.status = "approved"
+
+    db.commit()
+    db.refresh(approval)
+
+    return {
+        "success": True,
+        "message": "Approval executed successfully",
+        "approval_id": approval.id,
+        "result": result,
+    }
+
+
+
+@app.post("/approvals/{approval_id}/reject")
+def reject_approval(
+    approval_id: int,
+    db: Session = Depends(get_db),
+):
+    approval = db.query(Approval).filter(
+        Approval.id == approval_id
+    ).first()
+
+    if not approval:
+        return {
+            "success": False,
+            "message": "Approval not found",
+        }
+
+    if approval.status != "pending":
+        return {
+            "success": False,
+            "message": "Approval is no longer pending",
+        }
+
+    approval.status = "rejected"
+
+    db.commit()
+    db.refresh(approval)
+
+    return {
+        "success": True,
+        "message": "Approval rejected",
+        "approval_id": approval.id,
+        "status": approval.status,
+    }
 
 
 

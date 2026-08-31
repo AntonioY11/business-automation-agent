@@ -80,3 +80,29 @@ class Conversation(Base):
     created_at: Mapped[datetime] = mapped_column(
         default=datetime.utcnow
     )
+
+class Approval(Base):
+    __tablename__ = "approvals"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    customer_id: Mapped[int] = mapped_column()
+    intent: Mapped[str] = mapped_column(String(100))
+    account_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+    new_address: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+    refund_reason: Mapped[str | None] = mapped_column(
+        String(1000),
+        nullable=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(50),
+        default="pending",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        default=datetime.utcnow
+    )

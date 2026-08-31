@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
 
-from app.models import Account, Customer, Refund
+from app.models import Account, Customer, Refund, Approval
 from app.authorization import verify_account_access
+
+from app.policies import requires_approval
 
 def cancel_subscription(account_id: str, customer_id: int, db: Session):
     account = db.query(Account).filter(
@@ -319,6 +321,38 @@ def execute_operations(
     results = []
 
     for operation in operations:
+
+        if requires_approval(operation.intent):
+
+            approval = Approval(
+                customer_id=customer_id,
+                intent=operation.intent,
+                account_id=operation.account_id,
+                new_address=operation.new_address,
+                refund_reason=operation.refund_reason,
+                status="pending",
+            )
+
+            db.add(approval)
+            db.commit()
+            db.refresh(approval)
+
+            results.append({
+                "intent": operation.intent,
+                "result": {
+                    "success": False,
+                    "status": "pending_approval",
+                    "approval_id": approval.id,
+                    "message": (
+                        "This operation requires human approval "
+                        "before it can be executed."
+                    ),
+                },
+            })
+
+            continue
+
+        # Safe operations can execute automatically
         result = execute_action(
             operation.intent,
             operation.account_id,
