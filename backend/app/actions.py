@@ -1,9 +1,39 @@
 from sqlalchemy.orm import Session
 
-from app.models import Account, Customer, Refund, Approval
+from app.models import Account, Customer, Refund, Approval, AuditLog
 from app.authorization import verify_account_access
 
 from app.policies import requires_approval
+
+
+def create_audit_log(
+    customer_id: int,
+    action: str,
+    intent: str | None,
+    account_id: str | None,
+    result: str,
+    details: str | None,
+    db: Session,
+):
+    audit = AuditLog(
+        customer_id=customer_id,
+        action=action,
+        intent=intent,
+        account_id=account_id,
+        result=result,
+        details=details,
+    )
+
+    db.add(audit)
+    db.commit()
+    db.refresh(audit)
+
+    return audit
+
+
+
+
+
 
 def cancel_subscription(account_id: str, customer_id: int, db: Session):
     account = db.query(Account).filter(
@@ -321,7 +351,6 @@ def execute_operations(
     results = []
 
     for operation in operations:
-
         if requires_approval(operation.intent):
 
             approval = Approval(
@@ -336,6 +365,16 @@ def execute_operations(
             db.add(approval)
             db.commit()
             db.refresh(approval)
+
+            create_audit_log(
+                customer_id=customer_id,
+                action="approval_created",
+                intent=operation.intent,
+                account_id=operation.account_id,
+                result="pending",
+                details=f"Approval ID: {approval.id}",
+                db=db,
+            )
 
             results.append({
                 "intent": operation.intent,
@@ -352,7 +391,6 @@ def execute_operations(
 
             continue
 
-        # Safe operations can execute automatically
         result = execute_action(
             operation.intent,
             operation.account_id,

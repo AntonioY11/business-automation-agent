@@ -9,7 +9,7 @@ from app.schemas import AccountCreate, CustomerCreate, RequestCreate, MessageCre
 from app.agent import analyze_request, analyze_multiple_operations
 
 
-from app.actions import execute_action, generate_customer_message, execute_operations
+from app.actions import execute_action, generate_customer_message, execute_operations, create_audit_log
 
 app = FastAPI()
 
@@ -114,6 +114,16 @@ def approve_approval(
     )
 
     if not result["success"]:
+        create_audit_log(
+            customer_id=approval.customer_id,
+            action="approval_execution_failed",
+            intent=approval.intent,
+            account_id=approval.account_id,
+            result="failed",
+            details=result["message"],
+            db=db,
+        )
+
         return {
             "success": False,
             "message": "Operation failed",
@@ -125,6 +135,16 @@ def approve_approval(
 
     db.commit()
     db.refresh(approval)
+
+    create_audit_log(
+        customer_id=approval.customer_id,
+        action="approval_approved",
+        intent=approval.intent,
+        account_id=approval.account_id,
+        result="success",
+        details=f"Approval ID: {approval.id}",
+        db=db,
+    )
 
     return {
         "success": True,
@@ -160,6 +180,16 @@ def reject_approval(
 
     db.commit()
     db.refresh(approval)
+
+    create_audit_log(
+        customer_id=approval.customer_id,
+        action="approval_rejected",
+        intent=approval.intent,
+        account_id=approval.account_id,
+        result="rejected",
+        details=f"Approval ID: {approval.id}",
+        db=db,
+    )
 
     return {
         "success": True,

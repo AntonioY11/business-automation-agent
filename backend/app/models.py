@@ -106,3 +106,27 @@ class Approval(Base):
     created_at: Mapped[datetime] = mapped_column(
         default=datetime.utcnow
     )
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    customer_id: Mapped[int] = mapped_column()
+    action: Mapped[str] = mapped_column(String(100))
+    intent: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+    account_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+    result: Mapped[str] = mapped_column(String(50))
+    details: Mapped[str | None] = mapped_column(
+        String(2000),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        default=datetime.utcnow
+    )
