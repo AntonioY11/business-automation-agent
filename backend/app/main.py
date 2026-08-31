@@ -6,10 +6,10 @@ from app.models import Account, Customer, Request, Conversation
 from app.schemas import AccountCreate, CustomerCreate, RequestCreate, MessageCreate
 
 
-from app.agent import analyze_request
+from app.agent import analyze_request, analyze_multiple_operations
 
 
-from app.actions import execute_action, generate_customer_message
+from app.actions import execute_action, generate_customer_message, execute_operations
 
 app = FastAPI()
 
@@ -145,18 +145,23 @@ def create_message(
         db.commit()
         db.refresh(conversation)
 
-    analysis = analyze_request(message.message)
 
-    # Handle a pending task from a previous message
     if conversation.pending_field == "new_address":
-        if analysis.new_address:
-            account_id = conversation.pending_account_id
+        analysis = analyze_multiple_operations(message.message)
 
+        new_address = None
+
+        for operation in analysis.operations:
+            if operation.new_address:
+                new_address = operation.new_address
+                break
+
+        if new_address:
             action_result = execute_action(
                 "address_change",
-                account_id,
+                conversation.pending_account_id,
                 message.customer_id,
-                analysis.new_address,
+                new_address,
                 None,
                 db,
             )
@@ -183,32 +188,47 @@ def create_message(
                 "action": action_result,
             }
 
-    # New address-change request with missing address
-    if (
-        analysis.intent == "address_change"
-        and analysis.account_id
-        and not analysis.new_address
-    ):
-        conversation.pending_intent = "address_change"
-        conversation.pending_account_id = analysis.account_id
-        conversation.pending_field = "new_address"
 
-        db.commit()
+    analysis = analyze_multiple_operations(message.message)
 
-        return {
-            "conversation_id": conversation.id,
-            "analysis": analysis,
-            "action": {
-                "success": False,
-                "message": "New address is required for address change",
-            },
-            "customer_message": (
-                "I'd be happy to help change your address. "
-                "What would you like your new address to be?"
-            ),
-        }
+
+    for operation in analysis.operations:
+
+        if (
+            operation.intent == "address_change"
+            and operation.account_id
+            and not operation.new_address
+        ):
+            conversation.pending_intent = "address_change"
+            conversation.pending_account_id = operation.account_id
+            conversation.pending_field = "new_address"
+
+            db.commit()
+
+            return {
+                "conversation_id": conversation.id,
+                "analysis": analysis,
+                "action": {
+                    "success": False,
+                    "message": (
+                        "New address is required for address change"
+                    ),
+                },
+                "customer_message": (
+                    "I'd be happy to help change your address. "
+                    "What would you like your new address to be?"
+                ),
+            }
+
+    results = execute_operations(
+        analysis.operations,
+        message.customer_id,
+        db,
+    )
 
     return {
         "conversation_id": conversation.id,
         "analysis": analysis,
+        "results": results,
     }
+

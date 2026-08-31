@@ -269,3 +269,31 @@ def generate_customer_message(
         return "I couldn't find an account matching the information provided."
 
     return "I'm unable to complete your request automatically."
+
+
+
+
+def execute_operations(
+    operations,
+    customer_id: int,
+    db: Session,
+):
+    results = []
+
+    for operation in operations:
+        result = execute_action(
+            operation.intent,
+            operation.account_id,
+            customer_id,
+            operation.new_address,
+            operation.refund_reason,
+            db,
+        )
+
+        results.append({
+            "intent": operation.intent,
+            "result": result,
+        })
+
+    return results
+

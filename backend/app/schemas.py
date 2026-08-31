@@ -32,6 +32,25 @@ class AIRequestAnalysis(BaseModel):
     refund_reason: str | None = None
 
 
+class AIOperation(BaseModel):
+    intent: Literal[
+        "refund_request",
+        "cancel_subscription",
+        "address_change",
+        "account_question",
+        "create_support_ticket",
+    ]
+
+    account_id: str | None = None
+    new_address: str | None = None
+    refund_reason: str | None = None
+
+
+class AIMultiRequestAnalysis(BaseModel):
+    operations: list[AIOperation]
+    priority: Literal["low", "normal", "high"]
+
+
 class MessageCreate(BaseModel):
     customer_id: int
     message: str
