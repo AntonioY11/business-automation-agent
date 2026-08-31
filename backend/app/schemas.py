@@ -30,3 +30,8 @@ class AIRequestAnalysis(BaseModel):
     account_id: str | None = None
     new_address: str | None = None
     refund_reason: str | None = None
+
+
+class MessageCreate(BaseModel):
+    customer_id: int
+    message: str

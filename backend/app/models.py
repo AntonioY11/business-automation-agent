@@ -54,3 +54,29 @@ class Refund(Base):
     created_at: Mapped[datetime] = mapped_column(
         default=datetime.utcnow
     )
+
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    customer_id: Mapped[int] = mapped_column()
+    status: Mapped[str] = mapped_column(
+        String(50),
+        default="active",
+    )
+    pending_intent: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+    pending_account_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+    pending_field: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        default=datetime.utcnow
+    )

@@ -179,3 +179,51 @@ def execute_action(intent: str, account_id: str | None, customer_id: int, new_ad
         "success": False,
         "message": "No automated action available for this intent",
     }
+
+
+
+
+def generate_customer_message(
+    intent: str,
+    action_result: dict,
+):
+    if action_result["success"]:
+        if intent == "cancel_subscription":
+            return "Your subscription has been cancelled successfully."
+
+        if intent == "address_change":
+            return "Your address has been updated successfully."
+
+        if intent == "refund_request":
+            return (
+                "Your refund request has been created and is "
+                "pending review."
+            )
+
+    message = action_result["message"]
+
+    if message == "New address is required for address change":
+        return (
+            "I'd be happy to help change your address. "
+            "What would you like your new address to be?"
+        )
+
+    if message == "Account ID is required for cancellation":
+        return "Please provide your account ID so I can help cancel your subscription."
+
+    if message == "Account ID is required for address change":
+        return "Please provide your account ID so I can help change your address."
+
+    if message == "Account ID is required for refund request":
+        return "Please provide your account ID so I can help with your refund request."
+
+    if message == "Refund reason is required":
+        return "Please tell me why you are requesting a refund."
+
+    if message == "Account does not belong to customer":
+        return "I couldn't verify that account for your customer profile."
+
+    if message == "Account not found":
+        return "I couldn't find an account matching the information provided."
+
+    return "I'm unable to complete your request automatically."

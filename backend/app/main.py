@@ -2,14 +2,14 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 
 from app.database import engine
-from app.models import Account, Customer, Request
-from app.schemas import AccountCreate, CustomerCreate, RequestCreate
+from app.models import Account, Customer, Request, Conversation
+from app.schemas import AccountCreate, CustomerCreate, RequestCreate, MessageCreate
 
 
 from app.agent import analyze_request
 
 
-from app.actions import execute_action
+from app.actions import execute_action, generate_customer_message
 
 app = FastAPI()
 
@@ -104,6 +104,10 @@ def create_request(request: RequestCreate, db: Session = Depends(get_db)):
         analysis.refund_reason,
         db,
     )
+    customer_message = generate_customer_message(
+        analysis.intent,
+        action_result,
+    )
 
     if action_result["success"]:
         new_request.status = "completed"
@@ -118,4 +122,93 @@ def create_request(request: RequestCreate, db: Session = Depends(get_db)):
         "request": new_request,
         "analysis": analysis,
         "action": action_result,
+        "customer_message": customer_message,
+    }
+
+
+@app.post("/messages")
+def create_message(
+    message: MessageCreate,
+    db: Session = Depends(get_db),
+):
+    conversation = db.query(Conversation).filter(
+        Conversation.customer_id == message.customer_id,
+        Conversation.status == "active",
+    ).first()
+
+    if not conversation:
+        conversation = Conversation(
+            customer_id=message.customer_id,
+        )
+
+        db.add(conversation)
+        db.commit()
+        db.refresh(conversation)
+
+    analysis = analyze_request(message.message)
+
+    # Handle a pending task from a previous message
+    if conversation.pending_field == "new_address":
+        if analysis.new_address:
+            account_id = conversation.pending_account_id
+
+            action_result = execute_action(
+                "address_change",
+                account_id,
+                message.customer_id,
+                analysis.new_address,
+                None,
+                db,
+            )
+
+            if action_result["success"]:
+                conversation.pending_intent = None
+                conversation.pending_account_id = None
+                conversation.pending_field = None
+
+                db.commit()
+
+                return {
+                    "conversation_id": conversation.id,
+                    "analysis": analysis,
+                    "action": action_result,
+                    "customer_message": (
+                        "Your address has been updated successfully."
+                    ),
+                }
+
+            return {
+                "conversation_id": conversation.id,
+                "analysis": analysis,
+                "action": action_result,
+            }
+
+    # New address-change request with missing address
+    if (
+        analysis.intent == "address_change"
+        and analysis.account_id
+        and not analysis.new_address
+    ):
+        conversation.pending_intent = "address_change"
+        conversation.pending_account_id = analysis.account_id
+        conversation.pending_field = "new_address"
+
+        db.commit()
+
+        return {
+            "conversation_id": conversation.id,
+            "analysis": analysis,
+            "action": {
+                "success": False,
+                "message": "New address is required for address change",
+            },
+            "customer_message": (
+                "I'd be happy to help change your address. "
+                "What would you like your new address to be?"
+            ),
+        }
+
+    return {
+        "conversation_id": conversation.id,
+        "analysis": analysis,
     }
