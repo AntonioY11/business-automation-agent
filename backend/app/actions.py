@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.models import Account, Customer
+from app.models import Account, Customer, Refund
 
 
 def cancel_subscription(account_id: str, customer_id: int, db: Session):
@@ -86,7 +86,48 @@ def change_address(
 
 
 
-def execute_action(intent: str, account_id: str | None, customer_id: int, new_address: str | None, db: Session):
+def create_refund_request(
+    account_id: str,
+    customer_id: int,
+    reason: str,
+    db: Session,
+):
+    account = db.query(Account).filter(
+        Account.account_id == account_id
+    ).first()
+
+    if not account:
+        return {
+            "success": False,
+            "message": "Account not found",
+        }
+
+    if account.customer_id != customer_id:
+        return {
+            "success": False,
+            "message": "Account does not belong to customer",
+        }
+
+    refund = Refund(
+        account_id=account_id,
+        customer_id=customer_id,
+        reason=reason,
+        status="pending",
+    )
+
+    db.add(refund)
+    db.commit()
+    db.refresh(refund)
+
+    return {
+        "success": True,
+        "message": "Refund request created successfully",
+        "refund_id": refund.id,
+        "status": refund.status,
+    }
+
+
+def execute_action(intent: str, account_id: str | None, customer_id: int, new_address: str | None, refund_reason: str | None, db: Session):
     if intent == "cancel_subscription":
         if not account_id:
             return {
@@ -113,13 +154,28 @@ def execute_action(intent: str, account_id: str | None, customer_id: int, new_ad
 
         return change_address(account_id, customer_id, new_address, db)
 
-    return {
-        "success": False,
-        "message": "No automated action available for this intent",
-    }
+
+    if intent == "refund_request":
+        if not account_id:
+            return {
+                "success": False,
+                "message": "Account ID is required for refund request",
+            }
+
+        if not refund_reason:
+            return {
+                "success": False,
+                "message": "Refund reason is required",
+            }
+
+        return create_refund_request(
+            account_id,
+            customer_id,
+            refund_reason,
+            db,
+        )
 
     return {
         "success": False,
         "message": "No automated action available for this intent",
     }
-

@@ -101,6 +101,7 @@ def create_request(request: RequestCreate, db: Session = Depends(get_db)):
         analysis.account_id,
         request.customer_id,
         analysis.new_address,
+        analysis.refund_reason,
         db,
     )
 

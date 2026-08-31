@@ -37,3 +37,20 @@ class Request(Base):
     priority: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     account_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+
+
+class Refund(Base):
+    __tablename__ = "refunds"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    account_id: Mapped[str] = mapped_column(String(100))
+    customer_id: Mapped[int] = mapped_column()
+    reason: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(50),
+        default="pending",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        default=datetime.utcnow
+    )

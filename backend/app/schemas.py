@@ -29,3 +29,4 @@ class AIRequestAnalysis(BaseModel):
     priority: Literal["low", "normal", "high"]
     account_id: str | None = None
     new_address: str | None = None
+    refund_reason: str | None = None
