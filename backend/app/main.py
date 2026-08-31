@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import engine
@@ -215,7 +215,13 @@ def create_request(request: RequestCreate, db: Session = Depends(get_db)):
     new_request.status = "processing"
     db.commit()
 
-    analysis = analyze_request(request.raw_text)
+    try:
+        analysis = analyze_request(request.raw_text)
+    except RuntimeError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=str(e),
+        )
 
     new_request.intent = analysis.intent
     new_request.priority = analysis.priority
@@ -272,7 +278,13 @@ def create_message(
         db.refresh(conversation)
 
     if conversation.pending_field == "new_address":
-        analysis = analyze_multiple_operations(message.message)
+        try:
+            analysis = analyze_multiple_operations(message.message)
+        except RuntimeError as e:
+            raise HTTPException(
+                status_code=503,
+                detail=str(e),
+            )
 
         new_address = None
 
@@ -313,8 +325,13 @@ def create_message(
                 "action": action_result,
             }
 
-
-    analysis = analyze_multiple_operations(message.message)
+    try:
+        analysis = analyze_multiple_operations(message.message)
+    except RuntimeError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=str(e),
+        )
 
     results = []
     pending_operation = None

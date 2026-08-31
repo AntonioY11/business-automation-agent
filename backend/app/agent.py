@@ -1,7 +1,10 @@
 import os
+import time
+
 
 from dotenv import load_dotenv
 from google import genai
+from google.genai import errors
 from pathlib import Path
 
 from app.schemas import AIRequestAnalysis, AIMultiRequestAnalysis
@@ -18,10 +21,35 @@ if not api_key:
 client = genai.Client(api_key=api_key)
 
 
+
+def call_gemini(input_text: str, schema):
+    try:
+        return client.interactions.create(
+            model="gemini-3.6-flash",
+            input=input_text,
+            response_format={
+                "type": "text",
+                "mime_type": "application/json",
+                "schema": schema,
+            },
+        )
+
+    except errors.APIError as e:
+        if e.code == 429:
+            raise RuntimeError(
+                "AI service rate limit exceeded. Please try again later."
+            )
+
+        raise RuntimeError(
+            "AI service is currently unavailable."
+        )
+
+
+
+
 def analyze_request(text: str) -> AIRequestAnalysis:
-    interaction = client.interactions.create(
-        model="gemini-3.6-flash",
-        input=f"""
+    interaction = call_gemini(
+        input_text=f"""
 Analyze this customer request.
 
 Determine:
@@ -29,14 +57,11 @@ Determine:
 - the priority
 - the account ID if one is provided
 - the new address if the customer is requesting an address change
+
 Customer request:
 {text}
 """,
-        response_format={
-            "type": "text",
-            "mime_type": "application/json",
-            "schema": AIRequestAnalysis.model_json_schema(),
-        },
+        schema=AIRequestAnalysis.model_json_schema(),
     )
 
     return AIRequestAnalysis.model_validate_json(
@@ -47,9 +72,8 @@ Customer request:
 def analyze_multiple_operations(
     text: str,
 ) -> AIMultiRequestAnalysis:
-    interaction = client.interactions.create(
-        model="gemini-3.6-flash",
-        input=f"""
+    interaction = call_gemini(
+        input_text=f"""
 Analyze this customer request.
 
 A customer may be asking for one or more operations.
@@ -74,11 +98,7 @@ Also determine the overall priority.
 Customer request:
 {text}
 """,
-        response_format={
-            "type": "text",
-            "mime_type": "application/json",
-            "schema": AIMultiRequestAnalysis.model_json_schema(),
-        },
+        schema=AIMultiRequestAnalysis.model_json_schema(),
     )
 
     return AIMultiRequestAnalysis.model_validate_json(
