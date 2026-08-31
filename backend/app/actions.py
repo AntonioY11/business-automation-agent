@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.models import Account, Customer, Refund
-
+from app.authorization import verify_account_access
 
 def cancel_subscription(account_id: str, customer_id: int, db: Session):
     account = db.query(Account).filter(
@@ -131,6 +131,8 @@ def create_refund_request(
 def cancel_subscription_tool(
     account_id: str | None,
     customer_id: int,
+    new_address: str | None,
+    refund_reason: str | None,
     db: Session,
 ):
     if not account_id:
@@ -139,23 +141,46 @@ def cancel_subscription_tool(
             "message": "Account ID is required for cancellation",
         }
 
-    return cancel_subscription(
+    access = verify_account_access(
         account_id,
         customer_id,
         db,
     )
 
+    if not access["authorized"]:
+        return {
+            "success": False,
+            "message": access["message"],
+        }
+
+    return cancel_subscription(
+        account_id,
+        customer_id,
+        db,
+    )   
 
 def change_address_tool(
     account_id: str | None,
     customer_id: int,
     new_address: str | None,
+    refund_reason: str | None,
     db: Session,
 ):
     if not account_id:
         return {
             "success": False,
             "message": "Account ID is required for address change",
+        }
+    access = verify_account_access(
+        account_id,
+        customer_id,
+        db,
+    )
+
+    if not access["authorized"]:
+        return {
+            "success": False,
+            "message": access["message"],
         }
 
     if not new_address:
@@ -175,6 +200,7 @@ def change_address_tool(
 def refund_request_tool(
     account_id: str | None,
     customer_id: int,
+    new_address: str | None,
     refund_reason: str | None,
     db: Session,
 ):
@@ -182,6 +208,18 @@ def refund_request_tool(
         return {
             "success": False,
             "message": "Account ID is required for refund request",
+        }
+
+    access = verify_account_access(
+        account_id,
+        customer_id,
+        db,
+    )
+
+    if not access["authorized"]:
+        return {
+            "success": False,
+            "message": access["message"],
         }
 
     if not refund_reason:
