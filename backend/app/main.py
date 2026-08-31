@@ -2,8 +2,8 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 
 from app.database import engine
-from app.models import Account, Customer, Request, Conversation, Approval
-from app.schemas import AccountCreate, CustomerCreate, RequestCreate, MessageCreate
+from app.models import Account, Customer, Request, Conversation, Approval, AuditLog
+from app.schemas import AccountCreate, CustomerCreate, RequestCreate, MessageCreate, AuditLogResponse
 
 
 from app.agent import analyze_request, analyze_multiple_operations
@@ -394,3 +394,32 @@ def create_message(
         "analysis": analysis,
         "results": results,
     }
+
+
+@app.get("/audit-logs", response_model=list[AuditLogResponse])
+def get_audit_logs(
+    customer_id: int | None = None,
+    intent: str | None = None,
+    action: str | None = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(AuditLog)
+
+    if customer_id is not None:
+        query = query.filter(
+            AuditLog.customer_id == customer_id
+        )
+
+    if intent is not None:
+        query = query.filter(
+            AuditLog.intent == intent
+        )
+
+    if action is not None:
+        query = query.filter(
+            AuditLog.action == action
+        )
+
+    return query.order_by(
+        AuditLog.id.desc()
+    ).all()

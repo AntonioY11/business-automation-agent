@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 from typing import Literal
+from datetime import datetime
+
 
 class CustomerCreate(BaseModel):
     name: str
@@ -54,3 +56,14 @@ class AIMultiRequestAnalysis(BaseModel):
 class MessageCreate(BaseModel):
     customer_id: int
     message: str
+
+
+class AuditLogResponse(BaseModel):
+    id: int
+    customer_id: int
+    action: str
+    intent: str | None
+    account_id: str | None
+    result: str
+    details: str | None
+    created_at: datetime
