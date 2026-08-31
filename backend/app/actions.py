@@ -127,58 +127,99 @@ def create_refund_request(
     }
 
 
+
+def cancel_subscription_tool(
+    account_id: str | None,
+    customer_id: int,
+    new_address: str | None,
+    refund_reason: str | None,
+    db: Session,
+):
+    if not account_id:
+        return {
+            "success": False,
+            "message": "Account ID is required for cancellation",
+        }
+
+    return cancel_subscription(account_id, customer_id, db)
+
+
+def change_address_tool(
+    account_id: str | None,
+    customer_id: int,
+    new_address: str | None,
+    refund_reason: str | None,
+    db: Session,
+):
+    if not account_id:
+        return {
+            "success": False,
+            "message": "Account ID is required for address change",
+        }
+
+    if not new_address:
+        return {
+            "success": False,
+            "message": "New address is required for address change",
+        }
+
+    return change_address(
+        account_id,
+        customer_id,
+        new_address,
+        db,
+    )
+
+
+def refund_request_tool(
+    account_id: str | None,
+    customer_id: int,
+    new_address: str | None,
+    refund_reason: str | None,
+    db: Session,
+):
+    if not account_id:
+        return {
+            "success": False,
+            "message": "Account ID is required for refund request",
+        }
+
+    if not refund_reason:
+        return {
+            "success": False,
+            "message": "Refund reason is required",
+        }
+
+    return create_refund_request(
+        account_id,
+        customer_id,
+        refund_reason,
+        db,
+    )
+
+
+TOOLS = {
+    "cancel_subscription": cancel_subscription_tool,
+    "address_change": change_address_tool,
+    "refund_request": refund_request_tool,
+}
+
 def execute_action(intent: str, account_id: str | None, customer_id: int, new_address: str | None, refund_reason: str | None, db: Session):
-    if intent == "cancel_subscription":
-        if not account_id:
-            return {
-                "success": False,
-                "message": "Account ID is required for cancellation",
-            }
+    tool = TOOLS.get(intent)
 
-        return cancel_subscription(account_id, customer_id, db)
+    if not tool:
+        return {
+            "success": False,
+            "message": "No automated action available for this intent",
+        }
 
-
-
-    if intent == "address_change":
-        if not account_id:
-            return {
-                "success": False,
-                "message": "Account ID is required for address change",
-            }
-
-        if not new_address:
-            return {
-                "success": False,
-                "message": "New address is required for address change",
-            }
-
-        return change_address(account_id, customer_id, new_address, db)
-
-
-    if intent == "refund_request":
-        if not account_id:
-            return {
-                "success": False,
-                "message": "Account ID is required for refund request",
-            }
-
-        if not refund_reason:
-            return {
-                "success": False,
-                "message": "Refund reason is required",
-            }
-
-        return create_refund_request(
-            account_id,
-            customer_id,
-            refund_reason,
-            db,
-        )
-
-    return {
-        "success": False,
-        "message": "No automated action available for this intent",
-    }
+    return tool(
+        account_id,
+        customer_id,
+        new_address,
+        refund_reason,
+        db,
+    )
 
 
 
@@ -187,6 +228,7 @@ def generate_customer_message(
     intent: str,
     action_result: dict,
 ):
+
     if action_result["success"]:
         if intent == "cancel_subscription":
             return "Your subscription has been cancelled successfully."
