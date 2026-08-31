@@ -342,6 +342,9 @@ def generate_customer_message(
 
 
 
+APPROVAL_REQUIRED_INTENTS = {
+    "refund_request",
+}
 
 def execute_operations(
     operations,
@@ -351,8 +354,8 @@ def execute_operations(
     results = []
 
     for operation in operations:
-        if requires_approval(operation.intent):
 
+        if operation.intent in APPROVAL_REQUIRED_INTENTS:
             approval = Approval(
                 customer_id=customer_id,
                 intent=operation.intent,
@@ -380,12 +383,12 @@ def execute_operations(
                 "intent": operation.intent,
                 "result": {
                     "success": False,
-                    "status": "pending_approval",
-                    "approval_id": approval.id,
                     "message": (
                         "This operation requires human approval "
                         "before it can be executed."
                     ),
+                    "approval_id": approval.id,
+                    "status": "pending",
                 },
             })
 
