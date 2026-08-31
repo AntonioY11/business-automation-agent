@@ -38,6 +38,11 @@ class Request(Base):
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     account_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
+    error_message: Mapped[str | None] = mapped_column(
+    String(1000),
+    nullable=True,
+)
+
 
 
 class Refund(Base):
