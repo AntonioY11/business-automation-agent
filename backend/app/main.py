@@ -401,6 +401,8 @@ def get_audit_logs(
     customer_id: int | None = None,
     intent: str | None = None,
     action: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
     db: Session = Depends(get_db),
 ):
     query = db.query(AuditLog)
@@ -420,6 +422,10 @@ def get_audit_logs(
             AuditLog.action == action
         )
 
-    return query.order_by(
-        AuditLog.id.desc()
-    ).all()
+    return (
+        query
+        .order_by(AuditLog.id.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
