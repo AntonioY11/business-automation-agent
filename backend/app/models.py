@@ -1,6 +1,6 @@
 from sqlalchemy import String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from datetime import datetime
+from datetime import datetime, timezone
 
 class Base(DeclarativeBase):
     pass
@@ -35,7 +35,7 @@ class Request(Base):
     status: Mapped[str] = mapped_column(String(50), default="pending")
     intent: Mapped[str | None] = mapped_column(String(100), nullable=True)
     priority: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
     account_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     error_message: Mapped[str | None] = mapped_column(
@@ -57,7 +57,7 @@ class Refund(Base):
         default="pending",
     )
     created_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow
+        default=lambda: datetime.now(timezone.utc)
     )
 
 
@@ -83,7 +83,7 @@ class Conversation(Base):
         nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow
+        default=lambda: datetime.now(timezone.utc)
     )
 
 class Approval(Base):
@@ -109,7 +109,7 @@ class Approval(Base):
         default="pending",
     )
     created_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow
+        default=lambda: datetime.now(timezone.utc)
     )
 
 
@@ -133,5 +133,5 @@ class AuditLog(Base):
         nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow
+       default=lambda: datetime.now(timezone.utc)
     )
