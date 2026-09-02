@@ -56,6 +56,9 @@ def test_create_request(client, db, monkeypatch):
     assert data["action"]["success"] is True
     assert data["action"]["message"] == "Subscription cancelled successfully"
 
+    assert data["request"]["action_result"] is not None
+    assert "Subscription cancelled successfully" in data["request"]["action_result"]
+
 
 
 def test_create_request_action_failure(client, db, monkeypatch):
@@ -107,3 +110,5 @@ def test_create_request_action_failure(client, db, monkeypatch):
     assert data["request"]["status"] == "failed"
     assert data["analysis"]["intent"] == "cancel_subscription"
     assert data["action"]["success"] is False
+
+    assert data["request"]["action_result"] is not None

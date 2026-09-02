@@ -86,6 +86,24 @@ export default async function RequestDetailsPage({
         </div>
       </div>
 
+
+    
+    <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-6">
+            <h2 className="mb-4 font-semibold text-zinc-900">
+                Automation Result
+            </h2>
+
+            {request.action_result ? (
+                <pre className="overflow-x-auto rounded-lg bg-zinc-50 p-4 text-sm text-zinc-700">
+                {request.action_result}
+                </pre>
+            ) : (
+                <p className="text-sm text-zinc-500">
+                No automation result available.
+                </p>
+            )}
+    </div>
+
       {request.error_message && (
         <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-6">
           <h2 className="font-semibold text-red-800">

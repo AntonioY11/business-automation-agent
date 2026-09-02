@@ -6,6 +6,8 @@ from app.schemas import RequestCreate
 from app.agent import analyze_request
 from app.actions import execute_action, generate_customer_message
 
+import json
+
 
 def create_request(
     request: RequestCreate,
@@ -46,6 +48,8 @@ def create_request(
         db,
     )
 
+    new_request.action_result = json.dumps(action_result)
+    
     customer_message = generate_customer_message(
         analysis.intent,
         action_result,

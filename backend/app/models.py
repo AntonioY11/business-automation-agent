@@ -39,9 +39,13 @@ class Request(Base):
     account_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     error_message: Mapped[str | None] = mapped_column(
-    String(1000),
-    nullable=True,
-)
+        String(1000),
+        nullable=True,
+    )
+    action_result: Mapped[str | None] = mapped_column(
+        String(2000),
+        nullable=True,
+    )
 
 
 
