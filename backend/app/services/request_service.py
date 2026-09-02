@@ -65,3 +65,23 @@ def create_request(
         "action": action_result,
         "customer_message": customer_message,
     }
+
+
+def get_requests(db: Session):
+    return db.query(Request).order_by(
+        Request.created_at.desc()
+    ).all()
+
+
+def get_request(request_id: int, db: Session):
+    request = db.query(Request).filter(
+        Request.id == request_id
+    ).first()
+
+    if not request:
+        raise HTTPException(
+            status_code=404,
+            detail="Request not found",
+        )
+
+    return request

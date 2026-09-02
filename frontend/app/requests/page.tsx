@@ -1,5 +1,5 @@
 import { getRequests, Request } from "@/lib/api";
-
+import Link from "next/link";
 
 
 function getPriorityClass(priority: string | null) {
@@ -68,14 +68,19 @@ export default async function RequestsPage() {
           <tbody className="divide-y divide-zinc-200">
             {requests.map((request) => (
               <tr key={request.id} className="cursor-pointer hover:bg-zinc-50">
-                <td className="px-6 py-4">
-                  <p className="font-medium text-zinc-900">
-                    {request.raw_text}
-                  </p>
+                 <td className="px-6 py-4">
+                  <Link
+                    href={`/requests/${request.id}`}
+                    className="block"
+                  >
+                    <p className="font-medium text-zinc-900">
+                      {request.raw_text}
+                    </p>
 
-                  <p className="mt-1 text-sm text-zinc-500">
-                    Request #{request.id}
-                  </p>
+                    <p className="mt-1 text-sm text-zinc-500">
+                      Request #{request.id}
+                    </p>
+                  </Link>
                 </td>
 
                 <td className="px-6 py-4 text-sm text-zinc-600">

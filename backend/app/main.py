@@ -211,6 +211,25 @@ def create_request(request: RequestCreate, db: Session = Depends(get_db)):
     )
 
 
+
+@app.get("/requests")
+def get_requests(
+    db: Session = Depends(get_db),
+):
+    return request_service.get_requests(db)
+
+
+@app.get("/requests/{request_id}")
+def get_request(
+    request_id: int,
+    db: Session = Depends(get_db),
+):
+    return request_service.get_request(
+        request_id,
+        db,
+    )
+
+
 @app.post("/messages")
 def create_message(
     message: MessageCreate,
