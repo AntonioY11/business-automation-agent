@@ -49,7 +49,7 @@ def create_request(
     )
 
     new_request.action_result = json.dumps(action_result)
-    
+
     customer_message = generate_customer_message(
         analysis.intent,
         action_result,
@@ -89,3 +89,15 @@ def get_request(request_id: int, db: Session):
         )
 
     return request
+
+
+def get_customer_requests(
+    customer_id: int,
+    db: Session,
+):
+    return (
+        db.query(Request)
+        .filter(Request.customer_id == customer_id)
+        .order_by(Request.created_at.desc())
+        .all()
+    )

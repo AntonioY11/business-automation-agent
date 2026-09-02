@@ -12,6 +12,19 @@ export default async function RequestDetailsPage({
   const { id } = await params;
   const request = await getRequest(Number(id));
 
+
+  let actionResult: {
+    success: boolean;
+    message: string;
+  } | null = null;
+
+  if (request.action_result) {
+    actionResult = JSON.parse(request.action_result);
+  }
+
+
+
+
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -89,19 +102,31 @@ export default async function RequestDetailsPage({
 
     
     <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-6">
-            <h2 className="mb-4 font-semibold text-zinc-900">
-                Automation Result
-            </h2>
+        <h2 className="mb-4 font-semibold text-zinc-900">
+            Automation Result
+        </h2>
 
-            {request.action_result ? (
-                <pre className="overflow-x-auto rounded-lg bg-zinc-50 p-4 text-sm text-zinc-700">
-                {request.action_result}
-                </pre>
-            ) : (
-                <p className="text-sm text-zinc-500">
-                No automation result available.
-                </p>
-            )}
+    {actionResult ? (
+        <div>
+        <p
+            className={`font-medium ${
+            actionResult.success
+                ? "text-green-700"
+                : "text-red-700"
+            }`}
+        >
+            {actionResult.success ? "✓ Completed" : "✕ Failed"}
+        </p>
+
+        <p className="mt-2 text-sm text-zinc-600">
+            {actionResult.message}
+        </p>
+        </div>
+        ) : (
+            <p className="text-sm text-zinc-500">
+            No automation result available.
+            </p>
+        )}
     </div>
 
       {request.error_message && (

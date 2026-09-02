@@ -27,7 +27,7 @@ export default function Sidebar() {
         </a>
 
         <a
-          href="#"
+          href="/customers"
           className="block rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100"
         >
           Customers

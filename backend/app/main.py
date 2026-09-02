@@ -11,7 +11,7 @@ from app.schemas import AccountCreate, CustomerCreate, RequestCreate, MessageCre
 from app.actions import execute_action, create_audit_log
 
 
-from app.services import request_service, conversation_service
+from app.services import request_service, conversation_service, customer_service
 
 app = FastAPI()
 
@@ -45,6 +45,27 @@ def get_customers(db: Session = Depends(get_db)):
     customers = db.query(Customer).all()
     return customers
 
+
+@app.get("/customers/{customer_id}")
+def get_customer(
+    customer_id: int,
+    db: Session = Depends(get_db),
+):
+    return customer_service.get_customer(
+        customer_id,
+        db,
+    )
+
+
+@app.get("/customers/{customer_id}/requests")
+def get_customer_requests(
+    customer_id: int,
+    db: Session = Depends(get_db),
+):
+    return request_service.get_customer_requests(
+        customer_id,
+        db,
+    )
 
 
 @app.post("/accounts")
