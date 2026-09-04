@@ -298,6 +298,11 @@ def generate_customer_message(
     intent: str,
     action_result: dict,
 ):
+    if action_result.get("status") == "pending":
+        return (
+            "Your refund request has been submitted "
+            "and is pending review."
+        )
 
     if action_result["success"]:
         if intent == "cancel_subscription":

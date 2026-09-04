@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from app.database import engine
@@ -14,7 +15,13 @@ from app.actions import execute_action, create_audit_log
 from app.services import request_service, conversation_service, customer_service
 
 app = FastAPI()
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def get_db():
     with Session(engine) as session:
@@ -156,6 +163,13 @@ def approve_approval(
 
     approval.status = "approved"
 
+    request = db.query(Request).filter(
+    Request.id == approval.request_id
+    ).first()
+
+    if request:
+        request.status = "completed"
+
     db.commit()
     db.refresh(approval)
 
@@ -200,6 +214,13 @@ def reject_approval(
         }
 
     approval.status = "rejected"
+
+    request = db.query(Request).filter(
+        Request.id == approval.request_id
+    ).first()
+
+    if request:
+        request.status = "rejected"
 
     db.commit()
     db.refresh(approval)

@@ -1,10 +1,18 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.models import Request
+from app.models import Request, Approval
 from app.schemas import RequestCreate
 from app.agent import analyze_request
-from app.actions import execute_action, generate_customer_message
+from app.actions import (
+    execute_action,
+    generate_customer_message,
+    create_audit_log,
+    APPROVAL_REQUIRED_INTENTS,
+)
+from app.models import Request, Approval
+
+import json
 
 import json
 
@@ -39,14 +47,50 @@ def create_request(
 
     db.commit()
 
-    action_result = execute_action(
-        analysis.intent,
-        analysis.account_id,
-        request.customer_id,
-        analysis.new_address,
-        analysis.refund_reason,
-        db,
-    )
+    if analysis.intent in APPROVAL_REQUIRED_INTENTS:
+        approval = Approval(
+            customer_id=request.customer_id,
+            intent=analysis.intent,
+            request_id=new_request.id,
+            account_id=analysis.account_id,
+            new_address=analysis.new_address,
+            refund_reason=analysis.refund_reason,
+            status="pending",
+        )
+
+        db.add(approval)
+        db.commit()
+        db.refresh(approval)
+
+        create_audit_log(
+            customer_id=request.customer_id,
+            action="approval_created",
+            intent=analysis.intent,
+            account_id=analysis.account_id,
+            result="pending",
+            details=f"Approval ID: {approval.id}",
+            db=db,
+        )
+
+        action_result = {
+            "success": False,
+            "message": (
+                "This operation requires human approval "
+                "before it can be executed."
+            ),
+            "approval_id": approval.id,
+            "status": "pending",
+        }
+
+    else:
+        action_result = execute_action(
+            analysis.intent,
+            analysis.account_id,
+            request.customer_id,
+            analysis.new_address,
+            analysis.refund_reason,
+            db,
+        )
 
     new_request.action_result = json.dumps(action_result)
 
@@ -55,7 +99,9 @@ def create_request(
         action_result,
     )
 
-    if action_result["success"]:
+    if action_result.get("status") == "pending":
+        new_request.status = "pending"
+    elif action_result["success"]:
         new_request.status = "completed"
     else:
         new_request.status = "failed"
