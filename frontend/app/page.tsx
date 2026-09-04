@@ -1,8 +1,11 @@
 import StatCard from "@/components/StatCard";
-import { getRequests } from "@/lib/api";
+import { getRequests,getApprovals } from "@/lib/api";
 
 export default async function Home() {
-  const requests = await getRequests();
+  const [requests, approvals] = await Promise.all([
+    getRequests(),
+    getApprovals(),
+  ]);
 
   const pendingRequests = requests.filter(
     (request) => request.status === "pending"
@@ -14,6 +17,10 @@ export default async function Home() {
 
   const failedRequests = requests.filter(
     (request) => request.status === "failed"
+  ).length;
+
+  const pendingApprovals = approvals.filter(
+  (approval) => approval.status === "pending"
   ).length;
 
   return (
@@ -28,7 +35,7 @@ export default async function Home() {
         </p>
       </div>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-4">
         <StatCard
           label="Pending Requests"
           value={pendingRequests}
@@ -42,6 +49,11 @@ export default async function Home() {
         <StatCard
           label="Failed"
           value={failedRequests}
+        />
+
+        <StatCard
+          label="Pending Approvals"
+          value={pendingApprovals}
         />
       </section>
 
