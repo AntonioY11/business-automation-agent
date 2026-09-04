@@ -1,5 +1,7 @@
 import { getApprovals, Approval } from "@/lib/api";
 
+import ApprovalActions from "@/components/ApprovalActions";
+
 function getStatusClass(status: string) {
   switch (status) {
     case "pending":
@@ -66,6 +68,9 @@ export default async function ApprovalsPage() {
                 <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
                   Created
                 </th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
+                  Actions
+                </th>
               </tr>
             </thead>
 
@@ -106,6 +111,16 @@ export default async function ApprovalsPage() {
                   <td className="px-6 py-4 text-sm text-zinc-600">
                     {new Date(approval.created_at).toLocaleString()}
                   </td>
+
+                  <td className="px-6 py-4">
+                      {approval.status === "pending" ? (
+                        <ApprovalActions approvalId={approval.id} />
+                        ):(
+                        <span className="text-sm text-zinc-400">
+                            No actions
+                        </span>
+                      )}
+                 </td>
                 </tr>
               ))}
             </tbody>
