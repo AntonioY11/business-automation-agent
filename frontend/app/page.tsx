@@ -1,6 +1,21 @@
 import StatCard from "@/components/StatCard";
+import { getRequests } from "@/lib/api";
 
-export default function Home() {
+export default async function Home() {
+  const requests = await getRequests();
+
+  const pendingRequests = requests.filter(
+    (request) => request.status === "pending"
+  ).length;
+
+  const completedRequests = requests.filter(
+    (request) => request.status === "completed"
+  ).length;
+
+  const failedRequests = requests.filter(
+    (request) => request.status === "failed"
+  ).length;
+
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -16,17 +31,17 @@ export default function Home() {
       <section className="grid gap-4 md:grid-cols-3">
         <StatCard
           label="Pending Requests"
-          value={3}
+          value={pendingRequests}
         />
 
         <StatCard
           label="Completed"
-          value={24}
+          value={completedRequests}
         />
 
         <StatCard
           label="Failed"
-          value={2}
+          value={failedRequests}
         />
       </section>
 
@@ -38,53 +53,26 @@ export default function Home() {
         </div>
 
         <div className="divide-y divide-zinc-200">
-          <div className="flex items-center justify-between p-6">
-            <div>
-              <p className="font-medium text-zinc-900">
-                Cancel subscription
-              </p>
+          {requests.slice(0, 5).map((request) => (
+            <div
+              key={request.id}
+              className="flex items-center justify-between p-6"
+            >
+              <div>
+                <p className="font-medium text-zinc-900">
+                  {request.intent ?? "Processing request"}
+                </p>
 
-              <p className="mt-1 text-sm text-zinc-500">
-                Customer request
-              </p>
+                <p className="mt-1 text-sm text-zinc-500">
+                  Customer #{request.customer_id}
+                </p>
+              </div>
+
+              <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium text-zinc-700">
+                {request.status}
+              </span>
             </div>
-
-            <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
-              Completed
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between p-6">
-            <div>
-              <p className="font-medium text-zinc-900">
-                Change address
-              </p>
-
-              <p className="mt-1 text-sm text-zinc-500">
-                Customer request
-              </p>
-            </div>
-
-            <span className="rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-700">
-              Pending
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between p-6">
-            <div>
-              <p className="font-medium text-zinc-900">
-                Refund request
-              </p>
-
-              <p className="mt-1 text-sm text-zinc-500">
-                Customer request
-              </p>
-            </div>
-
-            <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
-              Approval
-            </span>
-          </div>
+          ))}
         </div>
       </section>
     </div>
