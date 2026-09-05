@@ -1,23 +1,23 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Literal
 from datetime import datetime
 
 
 class CustomerCreate(BaseModel):
-    name: str
-    email: str
-    subscription_status: str
+    name: str = Field(min_length=1, max_length=100)
+    email: str = Field(min_length=3, max_length=255)
+    subscription_status: str = Field(min_length=1, max_length=50)
 
 
 class RequestCreate(BaseModel):
     customer_id: int
-    raw_text: str
+    raw_text: str = Field(min_length=1, max_length=5000)
 
 
 class AccountCreate(BaseModel):
-    account_id: str
+    account_id: str = Field(min_length=1, max_length=100)
     customer_id: int
-    subscription_status: str
+    subscription_status: str = Field(min_length=1, max_length=50)
 
 
 class AIRequestAnalysis(BaseModel):
@@ -55,7 +55,7 @@ class AIMultiRequestAnalysis(BaseModel):
 
 class MessageCreate(BaseModel):
     customer_id: int
-    message: str
+    message: str = Field(min_length=1, max_length=5000)
 
 
 class AuditLogResponse(BaseModel):

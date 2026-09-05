@@ -130,9 +130,5 @@ def test_cannot_approve_already_approved(client, db):
         f"/approvals/{approval.id}/approve"
     )
 
-    assert response.status_code == 200
-
-    data = response.json()
-
-    assert data["success"] is False
-    assert data["message"] == "Approval is no longer pending"
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Approval is no longer pending"

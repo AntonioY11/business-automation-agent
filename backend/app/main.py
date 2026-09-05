@@ -1,6 +1,9 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+
+import json
 
 from app.database import engine
 from app.models import Account, Customer, Request, Conversation, Approval, AuditLog
@@ -41,7 +44,16 @@ def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
     )
 
     db.add(new_customer)
-    db.commit()
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="A customer with that email already exists",
+        )
+
     db.refresh(new_customer)
 
     return new_customer
@@ -84,7 +96,16 @@ def create_account(account: AccountCreate, db: Session = Depends(get_db)):
     )
 
     db.add(new_account)
-    db.commit()
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="An account with that account_id already exists",
+        )
+
     db.refresh(new_account)
 
     return new_account
@@ -97,7 +118,10 @@ def get_account(account_id: str, db: Session = Depends(get_db)):
     ).first()
 
     if not account:
-        return {"error": "Account not found"}
+        raise HTTPException(
+            status_code=404,
+            detail="Account not found",
+        )
 
     return account
 
@@ -113,26 +137,50 @@ def get_pending_approvals(
     return approvals
 
 
-@app.post("/approvals/{approval_id}/approve")
-def approve_approval(
-    approval_id: int,
-    db: Session = Depends(get_db),
-):
+def _load_pending_approval(approval_id: int, db: Session):
     approval = db.query(Approval).filter(
         Approval.id == approval_id
     ).first()
 
     if not approval:
-        return {
-            "success": False,
-            "message": "Approval not found",
-        }
+        raise HTTPException(
+            status_code=404,
+            detail="Approval not found",
+        )
 
     if approval.status != "pending":
-        return {
-            "success": False,
-            "message": "Approval is no longer pending",
-        }
+        raise HTTPException(
+            status_code=409,
+            detail="Approval is no longer pending",
+        )
+
+    return approval
+
+
+def _sync_request(approval: Approval, status: str, result: dict, db: Session):
+    if approval.request_id is None:
+        return
+
+    request = db.query(Request).filter(
+        Request.id == approval.request_id
+    ).first()
+
+    if not request:
+        return
+
+    request.status = status
+    request.action_result = json.dumps(result)
+
+    if not result.get("success"):
+        request.error_message = result["message"][:1000]
+
+
+@app.post("/approvals/{approval_id}/approve")
+def approve_approval(
+    approval_id: int,
+    db: Session = Depends(get_db),
+):
+    approval = _load_pending_approval(approval_id, db)
 
     result = execute_action(
         approval.intent,
@@ -163,12 +211,7 @@ def approve_approval(
 
     approval.status = "approved"
 
-    request = db.query(Request).filter(
-    Request.id == approval.request_id
-    ).first()
-
-    if request:
-        request.status = "completed"
+    _sync_request(approval, "completed", result, db)
 
     db.commit()
     db.refresh(approval)
@@ -191,36 +234,23 @@ def approve_approval(
     }
 
 
-
 @app.post("/approvals/{approval_id}/reject")
 def reject_approval(
     approval_id: int,
     db: Session = Depends(get_db),
 ):
-    approval = db.query(Approval).filter(
-        Approval.id == approval_id
-    ).first()
-
-    if not approval:
-        return {
-            "success": False,
-            "message": "Approval not found",
-        }
-
-    if approval.status != "pending":
-        return {
-            "success": False,
-            "message": "Approval is no longer pending",
-        }
+    approval = _load_pending_approval(approval_id, db)
 
     approval.status = "rejected"
 
-    request = db.query(Request).filter(
-        Request.id == approval.request_id
-    ).first()
+    rejection = {
+        "success": False,
+        "message": "This operation was rejected by a reviewer.",
+        "approval_id": approval.id,
+        "status": "rejected",
+    }
 
-    if request:
-        request.status = "rejected"
+    _sync_request(approval, "rejected", rejection, db)
 
     db.commit()
     db.refresh(approval)
@@ -241,8 +271,6 @@ def reject_approval(
         "approval_id": approval.id,
         "status": approval.status,
     }
-
-
 
 
 @app.post("/requests")
@@ -288,8 +316,8 @@ def get_audit_logs(
     customer_id: int | None = None,
     intent: str | None = None,
     action: str | None = None,
-    limit: int = 50,
-    offset: int = 0,
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
 ):
     query = db.query(AuditLog)
