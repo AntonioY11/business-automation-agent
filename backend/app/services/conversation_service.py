@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.models import Conversation
 from app.schemas import MessageCreate
 from app.agent import analyze_multiple_operations
-from app.actions import execute_action
+from app.actions import process_operation, generate_customer_message
 
 
 def create_message(
@@ -42,7 +42,7 @@ def create_message(
                 break
 
         if new_address:
-            action_result = execute_action(
+            action_result = process_operation(
                 "address_change",
                 conversation.pending_account_id,
                 message.customer_id,
@@ -51,7 +51,12 @@ def create_message(
                 db,
             )
 
-            if action_result["success"]:
+            resolved = (
+                action_result["success"]
+                or action_result.get("status") == "pending"
+            )
+
+            if resolved:
                 conversation.pending_intent = None
                 conversation.pending_account_id = None
                 conversation.pending_field = None
@@ -62,8 +67,9 @@ def create_message(
                     "conversation_id": conversation.id,
                     "analysis": analysis,
                     "action": action_result,
-                    "customer_message": (
-                        "Your address has been updated successfully."
+                    "customer_message": generate_customer_message(
+                        "address_change",
+                        action_result,
                     ),
                 }
 
@@ -94,7 +100,7 @@ def create_message(
             pending_operation = operation
             continue
 
-        result = execute_action(
+        result = process_operation(
             operation.intent,
             operation.account_id,
             message.customer_id,
