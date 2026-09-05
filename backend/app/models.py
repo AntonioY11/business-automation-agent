@@ -95,7 +95,7 @@ class Approval(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     customer_id: Mapped[int] = mapped_column()
-    request_id: Mapped[int] = mapped_column()
+    request_id: Mapped[int | None] = mapped_column(nullable=True)
     intent: Mapped[str] = mapped_column(String(100))
     account_id: Mapped[str | None] = mapped_column(
         String(100),
