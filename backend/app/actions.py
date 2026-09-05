@@ -160,112 +160,122 @@ def create_refund_request(
 
 
 
+ACCOUNT_REQUIRED_MESSAGE = {
+    "cancel_subscription": "Account ID is required for cancellation",
+    "address_change": "Account ID is required for address change",
+    "refund_request": "Account ID is required for refund request",
+}
+
+REQUIRED_FIELDS = {
+    "cancel_subscription": (),
+    "address_change": (
+        ("new_address", "New address is required for address change"),
+    ),
+    "refund_request": (
+        ("refund_reason", "Refund reason is required"),
+    ),
+}
+
+
+def validate_action(
+    intent: str,
+    account_id: str | None,
+    customer_id: int,
+    new_address: str | None,
+    refund_reason: str | None,
+    db: Session,
+):
+    if intent not in TOOLS:
+        return {
+            "valid": False,
+            "message": "No automated action available for this intent",
+        }
+
+    if not account_id:
+        return {
+            "valid": False,
+            "message": ACCOUNT_REQUIRED_MESSAGE[intent],
+        }
+
+    access = verify_account_access(account_id, customer_id, db)
+
+    if not access["authorized"]:
+        return {
+            "valid": False,
+            "message": access["message"],
+        }
+
+    values = {
+        "new_address": new_address,
+        "refund_reason": refund_reason,
+    }
+
+    for field, message in REQUIRED_FIELDS[intent]:
+        if not values[field]:
+            return {
+                "valid": False,
+                "message": message,
+            }
+
+    return {"valid": True, "message": ""}
+
+
+def _guard(intent: str):
+    def decorator(fn):
+        def tool(
+            account_id: str | None,
+            customer_id: int,
+            new_address: str | None,
+            refund_reason: str | None,
+            db: Session,
+        ):
+            check = validate_action(
+                intent,
+                account_id,
+                customer_id,
+                new_address,
+                refund_reason,
+                db,
+            )
+
+            if not check["valid"]:
+                return {
+                    "success": False,
+                    "message": check["message"],
+                }
+
+            return fn(
+                account_id,
+                customer_id,
+                new_address,
+                refund_reason,
+                db,
+            )
+
+        return tool
+
+    return decorator
+
+
+@_guard("cancel_subscription")
 def cancel_subscription_tool(
-    account_id: str | None,
-    customer_id: int,
-    new_address: str | None,
-    refund_reason: str | None,
-    db: Session,
+    account_id, customer_id, new_address, refund_reason, db,
 ):
-    if not account_id:
-        return {
-            "success": False,
-            "message": "Account ID is required for cancellation",
-        }
+    return cancel_subscription(account_id, customer_id, db)
 
-    access = verify_account_access(
-        account_id,
-        customer_id,
-        db,
-    )
 
-    if not access["authorized"]:
-        return {
-            "success": False,
-            "message": access["message"],
-        }
-
-    return cancel_subscription(
-        account_id,
-        customer_id,
-        db,
-    )   
-
+@_guard("address_change")
 def change_address_tool(
-    account_id: str | None,
-    customer_id: int,
-    new_address: str | None,
-    refund_reason: str | None,
-    db: Session,
+    account_id, customer_id, new_address, refund_reason, db,
 ):
-    if not account_id:
-        return {
-            "success": False,
-            "message": "Account ID is required for address change",
-        }
-    access = verify_account_access(
-        account_id,
-        customer_id,
-        db,
-    )
-
-    if not access["authorized"]:
-        return {
-            "success": False,
-            "message": access["message"],
-        }
-
-    if not new_address:
-        return {
-            "success": False,
-            "message": "New address is required for address change",
-        }
-
-    return change_address(
-        account_id,
-        customer_id,
-        new_address,
-        db,
-    )
+    return change_address(account_id, customer_id, new_address, db)
 
 
+@_guard("refund_request")
 def refund_request_tool(
-    account_id: str | None,
-    customer_id: int,
-    new_address: str | None,
-    refund_reason: str | None,
-    db: Session,
+    account_id, customer_id, new_address, refund_reason, db,
 ):
-    if not account_id:
-        return {
-            "success": False,
-            "message": "Account ID is required for refund request",
-        }
-
-    access = verify_account_access(
-        account_id,
-        customer_id,
-        db,
-    )
-
-    if not access["authorized"]:
-        return {
-            "success": False,
-            "message": access["message"],
-        }
-
-    if not refund_reason:
-        return {
-            "success": False,
-            "message": "Refund reason is required",
-        }
-
-    return create_refund_request(
-        account_id,
-        customer_id,
-        refund_reason,
-        db,
-    )
+    return create_refund_request(account_id, customer_id, refund_reason, db)
 
 
 TOOLS = {
@@ -274,7 +284,15 @@ TOOLS = {
     "refund_request": refund_request_tool,
 }
 
-def execute_action(intent: str, account_id: str | None, customer_id: int, new_address: str | None, refund_reason: str | None, db: Session):
+
+def execute_action(
+    intent: str,
+    account_id: str | None,
+    customer_id: int,
+    new_address: str | None,
+    refund_reason: str | None,
+    db: Session,
+):
     tool = TOOLS.get(intent)
 
     if not tool:
@@ -290,7 +308,6 @@ def execute_action(intent: str, account_id: str | None, customer_id: int, new_ad
         refund_reason,
         db,
     )
-
 
 
 
@@ -347,71 +364,90 @@ def generate_customer_message(
 
 
 
-APPROVAL_REQUIRED_INTENTS = {
-    "refund_request",
-}
-
-def execute_operations(
-    operations,
+def create_approval(
+    intent: str,
+    account_id: str | None,
     customer_id: int,
+    new_address: str | None,
+    refund_reason: str | None,
     db: Session,
+    request_id: int | None = None,
 ):
-    results = []
+    approval = Approval(
+        customer_id=customer_id,
+        request_id=request_id,
+        intent=intent,
+        account_id=account_id,
+        new_address=new_address,
+        refund_reason=refund_reason,
+        status="pending",
+    )
 
-    for operation in operations:
+    db.add(approval)
+    db.commit()
+    db.refresh(approval)
 
-        if operation.intent in APPROVAL_REQUIRED_INTENTS:
-            approval = Approval(
-                customer_id=customer_id,
-                intent=operation.intent,
-                account_id=operation.account_id,
-                new_address=operation.new_address,
-                refund_reason=operation.refund_reason,
-                status="pending",
-            )
+    create_audit_log(
+        customer_id=customer_id,
+        action="approval_created",
+        intent=intent,
+        account_id=account_id,
+        result="pending",
+        details=f"Approval ID: {approval.id}",
+        db=db,
+    )
 
-            db.add(approval)
-            db.commit()
-            db.refresh(approval)
+    return {
+        "success": False,
+        "message": (
+            "This operation requires human approval "
+            "before it can be executed."
+        ),
+        "approval_id": approval.id,
+        "status": "pending",
+    }
 
-            create_audit_log(
-                customer_id=customer_id,
-                action="approval_created",
-                intent=operation.intent,
-                account_id=operation.account_id,
-                result="pending",
-                details=f"Approval ID: {approval.id}",
-                db=db,
-            )
 
-            results.append({
-                "intent": operation.intent,
-                "result": {
-                    "success": False,
-                    "message": (
-                        "This operation requires human approval "
-                        "before it can be executed."
-                    ),
-                    "approval_id": approval.id,
-                    "status": "pending",
-                },
-            })
+def process_operation(
+    intent: str,
+    account_id: str | None,
+    customer_id: int,
+    new_address: str | None,
+    refund_reason: str | None,
+    db: Session,
+    request_id: int | None = None,
+):
+    check = validate_action(
+        intent,
+        account_id,
+        customer_id,
+        new_address,
+        refund_reason,
+        db,
+    )
 
-            continue
+    if not check["valid"]:
+        return {
+            "success": False,
+            "message": check["message"],
+        }
 
-        result = execute_action(
-            operation.intent,
-            operation.account_id,
+    if requires_approval(intent):
+        return create_approval(
+            intent,
+            account_id,
             customer_id,
-            operation.new_address,
-            operation.refund_reason,
+            new_address,
+            refund_reason,
             db,
+            request_id,
         )
 
-        results.append({
-            "intent": operation.intent,
-            "result": result,
-        })
-
-    return results
-
+    return execute_action(
+        intent,
+        account_id,
+        customer_id,
+        new_address,
+        refund_reason,
+        db,
+    )

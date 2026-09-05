@@ -3,8 +3,11 @@ import time
 
 
 from dotenv import load_dotenv
+import httpx
+
 from google import genai
 from google.genai import errors
+from pydantic import ValidationError
 from pathlib import Path
 
 from app.schemas import AIRequestAnalysis, AIMultiRequestAnalysis
@@ -44,7 +47,24 @@ def call_gemini(input_text: str, schema):
             "AI service is currently unavailable."
         )
 
+    except httpx.HTTPError:
+        raise RuntimeError(
+            "AI service is currently unreachable."
+        )
 
+
+
+
+def _parse(schema, output_text: str | None):
+    if not output_text:
+        raise RuntimeError("AI service returned an empty response.")
+
+    try:
+        return schema.model_validate_json(output_text)
+    except ValidationError:
+        raise RuntimeError(
+            "AI service returned a response that could not be understood."
+        )
 
 
 def analyze_request(text: str) -> AIRequestAnalysis:
@@ -64,9 +84,7 @@ Customer request:
         schema=AIRequestAnalysis.model_json_schema(),
     )
 
-    return AIRequestAnalysis.model_validate_json(
-        interaction.output_text
-    )
+    return _parse(AIRequestAnalysis, interaction.output_text)
 
 
 def analyze_multiple_operations(
@@ -101,7 +119,5 @@ Customer request:
         schema=AIMultiRequestAnalysis.model_json_schema(),
     )
 
-    return AIMultiRequestAnalysis.model_validate_json(
-        interaction.output_text
-    )
+    return _parse(AIMultiRequestAnalysis, interaction.output_text)
 
