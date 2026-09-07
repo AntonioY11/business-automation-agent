@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { createRequest } from "@/lib/api";
+import Link from "next/link";
+import { createRequest, CreateRequestResult } from "@/lib/api";
 
 export default function NewRequestPage() {
   const [customerId, setCustomerId] = useState("");
   const [request, setRequest] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<CreateRequestResult | null>(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -24,8 +25,12 @@ export default function NewRequestPage() {
             );
 
             setResult(data);
-        } catch {
-            setError("Failed to process request.");
+        } catch (submitError) {
+            setError(
+              submitError instanceof Error
+                ? submitError.message
+                : "Failed to process request."
+            );
         } finally {
             setLoading(false);
         }
@@ -112,6 +117,13 @@ export default function NewRequestPage() {
                 <p className="mt-2 text-sm text-zinc-600">
                 {result.customer_message}
                 </p>
+
+                <Link
+                  href={`/requests/${result.request.id}`}
+                  className="mt-3 inline-block text-sm font-medium text-zinc-900 underline"
+                >
+                  View request
+                </Link>
             </div>
         )}
       </div>
