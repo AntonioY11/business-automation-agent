@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# frontend/lib is application code, not a Python build dir
+!frontend/lib/
