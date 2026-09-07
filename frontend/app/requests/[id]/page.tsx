@@ -1,4 +1,6 @@
-import { getRequest } from "@/lib/api";
+import { notFound } from "next/navigation";
+
+import { ApiError, getRequest, Request } from "@/lib/api";
 
 type RequestDetailsPageProps = {
   params: Promise<{
@@ -10,8 +12,23 @@ export default async function RequestDetailsPage({
   params,
 }: RequestDetailsPageProps) {
   const { id } = await params;
-  const request = await getRequest(Number(id));
+  const requestId = Number(id);
 
+  if (!Number.isInteger(requestId) || requestId < 1) {
+    notFound();
+  }
+
+  let request: Request;
+
+  try {
+    request = await getRequest(requestId);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      notFound();
+    }
+
+    throw error;
+  }
 
   let actionResult: {
     success: boolean;
@@ -19,7 +36,11 @@ export default async function RequestDetailsPage({
   } | null = null;
 
   if (request.action_result) {
-    actionResult = JSON.parse(request.action_result);
+    try {
+      actionResult = JSON.parse(request.action_result);
+    } catch {
+      actionResult = null;
+    }
   }
 
 
