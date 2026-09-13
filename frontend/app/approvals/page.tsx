@@ -1,19 +1,7 @@
 import { getApprovals, Approval } from "@/lib/api";
 
 import ApprovalActions from "@/components/ApprovalActions";
-
-function getStatusClass(status: string) {
-  switch (status) {
-    case "pending":
-      return "bg-yellow-100 text-yellow-700";
-    case "approved":
-      return "bg-green-100 text-green-700";
-    case "rejected":
-      return "bg-red-100 text-red-700";
-    default:
-      return "bg-zinc-100 text-zinc-700";
-  }
-}
+import StatusBadge from "@/components/StatusBadge";
 
 export default async function ApprovalsPage() {
   let approvals: Approval[] = [];
@@ -99,13 +87,7 @@ export default async function ApprovalsPage() {
                   </td>
 
                   <td className="px-6 py-4">
-                    <span
-                      className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusClass(
-                        approval.status
-                      )}`}
-                    >
-                      {approval.status}
-                    </span>
+                    <StatusBadge status={approval.status} />
                   </td>
 
                   <td className="px-6 py-4 text-sm text-zinc-600">

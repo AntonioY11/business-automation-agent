@@ -3,31 +3,13 @@ import {
   getCustomer,
   getCustomerRequests,
 } from "@/lib/api";
+import StatusBadge from "@/components/StatusBadge";
 
 type CustomerDetailsPageProps = {
   params: Promise<{
     id: string;
   }>;
 };
-
-function getStatusClass(status: string) {
-  switch (status) {
-    case "completed":
-      return "bg-green-100 text-green-700";
-
-    case "failed":
-      return "bg-red-100 text-red-700";
-
-    case "processing":
-      return "bg-yellow-100 text-yellow-700";
-
-    case "pending":
-      return "bg-zinc-100 text-zinc-700";
-
-    default:
-      return "bg-zinc-100 text-zinc-700";
-  }
-}
 
 function getPriorityClass(priority: string | null) {
   switch (priority) {
@@ -90,7 +72,7 @@ export default async function CustomerDetailsPage({
             <span className="font-medium text-zinc-500">
               Subscription:
             </span>{" "}
-            {customer.subscription_status}
+            <StatusBadge status={customer.subscription_status} />
           </p>
 
           <p>
@@ -176,13 +158,7 @@ export default async function CustomerDetailsPage({
                   </td>
 
                   <td className="px-6 py-4">
-                    <span
-                      className={`rounded-full px-3 py-1 text-sm font-medium ${getStatusClass(
-                        request.status
-                      )}`}
-                    >
-                      {request.status}
-                    </span>
+                    <StatusBadge status={request.status} />
                   </td>
                 </tr>
               ))}

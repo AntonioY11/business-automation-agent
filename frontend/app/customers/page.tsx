@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCustomers } from "@/lib/api";
+import StatusBadge from "@/components/StatusBadge";
 
 export default async function CustomersPage() {
   const customers = await getCustomers();
@@ -64,9 +65,7 @@ export default async function CustomersPage() {
                 </td>
 
                 <td className="px-6 py-4">
-                  <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
-                    {customer.subscription_status}
-                  </span>
+                  <StatusBadge status={customer.subscription_status} />
                 </td>
 
                 <td className="px-6 py-4 text-sm text-zinc-600">

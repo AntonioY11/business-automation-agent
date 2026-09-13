@@ -1,4 +1,5 @@
 import StatCard from "@/components/StatCard";
+import StatusBadge from "@/components/StatusBadge";
 import { getRequests,getApprovals } from "@/lib/api";
 
 export default async function Home() {
@@ -80,9 +81,7 @@ export default async function Home() {
                 </p>
               </div>
 
-              <span className="rounded-full bg-zinc-100 px-3 py-1 text-sm font-medium text-zinc-700">
-                {request.status}
-              </span>
+              <StatusBadge status={request.status} />
             </div>
           ))}
         </div>

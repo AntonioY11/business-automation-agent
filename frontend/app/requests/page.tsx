@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import Link from "next/link";
 
 import { getRequests, Request } from "@/lib/api";
+import StatusBadge from "@/components/StatusBadge";
 
 function getPriorityClass(priority: string | null) {
   switch (priority) {
@@ -102,9 +103,7 @@ async function RequestsTable() {
             </td>
 
             <td className="px-6 py-4">
-              <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
-                {request.status}
-              </span>
+              <StatusBadge status={request.status} />
             </td>
           </tr>
         ))}

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { ApiError, getRequest, Request } from "@/lib/api";
+import StatusBadge from "@/components/StatusBadge";
 
 type RequestDetailsPageProps = {
   params: Promise<{
@@ -93,7 +94,7 @@ export default async function RequestDetailsPage({
               <span className="font-medium text-zinc-500">
                 Status:
               </span>{" "}
-              {request.status}
+              <StatusBadge status={request.status} />
             </p>
 
             <p>
