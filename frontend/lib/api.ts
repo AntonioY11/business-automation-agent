@@ -72,8 +72,11 @@ export type Approval = {
 
 export type AuditLog = {
   id: number;
-  customer_id: number | null;
-  event_type: string;
+  customer_id: number;
+  action: string;
+  intent: string | null;
+  account_id: string | null;
+  result: string;
   details: string | null;
   created_at: string;
 };

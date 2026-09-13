@@ -1,4 +1,11 @@
 import { getAuditLogs, AuditLog } from "@/lib/api";
+import StatusBadge from "@/components/StatusBadge";
+
+function formatAction(action: string) {
+  const label = action.replaceAll("_", " ");
+
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
 
 export default async function AuditLogsPage() {
   let logs: AuditLog[] = [];
@@ -43,6 +50,14 @@ export default async function AuditLogsPage() {
                 </th>
 
                 <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
+                  Intent
+                </th>
+
+                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
+                  Result
+                </th>
+
+                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
                   Details
                 </th>
 
@@ -60,7 +75,7 @@ export default async function AuditLogsPage() {
                 >
                   <td className="px-6 py-4">
                     <p className="font-medium text-zinc-900">
-                      {log.event_type}
+                      {formatAction(log.action)}
                     </p>
 
                     <p className="mt-1 text-sm text-zinc-500">
@@ -69,9 +84,21 @@ export default async function AuditLogsPage() {
                   </td>
 
                   <td className="px-6 py-4 text-sm text-zinc-600">
-                    {log.customer_id
-                      ? `Customer #${log.customer_id}`
-                      : "System"}
+                    <p>Customer #{log.customer_id}</p>
+
+                    {log.account_id && (
+                      <p className="mt-1 text-zinc-500">
+                        {log.account_id}
+                      </p>
+                    )}
+                  </td>
+
+                  <td className="px-6 py-4 text-sm text-zinc-600">
+                    {log.intent ?? "—"}
+                  </td>
+
+                  <td className="px-6 py-4">
+                    <StatusBadge status={log.result} />
                   </td>
 
                   <td className="px-6 py-4 text-sm text-zinc-600">
