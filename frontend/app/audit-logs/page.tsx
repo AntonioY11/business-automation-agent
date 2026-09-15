@@ -1,5 +1,9 @@
-import { getAuditLogs, AuditLog } from "@/lib/api";
+import { Suspense } from "react";
+import { connection } from "next/server";
+
+import { getAuditLogs } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
+import TableSkeleton from "@/components/TableSkeleton";
 
 function formatAction(action: string) {
   const label = action.replaceAll("_", " ");
@@ -7,15 +11,95 @@ function formatAction(action: string) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
-export default async function AuditLogsPage() {
-  let logs: AuditLog[] = [];
+async function AuditLogsTable() {
+  await connection();
 
-  try {
-    logs = await getAuditLogs();
-  } catch {
-    logs = [];
+  const logs = await getAuditLogs();
+
+  if (logs.length === 0) {
+    return (
+      <div className="p-6 text-sm text-zinc-500">
+        No audit logs found.
+      </div>
+    );
   }
 
+  return (
+    <table className="w-full">
+      <thead className="border-b border-zinc-200 bg-zinc-50">
+        <tr>
+          <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
+            Event
+          </th>
+
+          <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
+            Customer
+          </th>
+
+          <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
+            Intent
+          </th>
+
+          <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
+            Result
+          </th>
+
+          <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
+            Details
+          </th>
+
+          <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
+            Created
+          </th>
+        </tr>
+      </thead>
+
+      <tbody className="divide-y divide-zinc-200">
+        {logs.map((log) => (
+          <tr key={log.id} className="hover:bg-zinc-50">
+            <td className="px-6 py-4">
+              <p className="font-medium text-zinc-900">
+                {formatAction(log.action)}
+              </p>
+
+              <p className="mt-1 text-sm text-zinc-500">
+                Log #{log.id}
+              </p>
+            </td>
+
+            <td className="px-6 py-4 text-sm text-zinc-600">
+              <p>Customer #{log.customer_id}</p>
+
+              {log.account_id && (
+                <p className="mt-1 text-zinc-500">
+                  {log.account_id}
+                </p>
+              )}
+            </td>
+
+            <td className="px-6 py-4 text-sm text-zinc-600">
+              {log.intent ?? "—"}
+            </td>
+
+            <td className="px-6 py-4">
+              <StatusBadge status={log.result} />
+            </td>
+
+            <td className="px-6 py-4 text-sm text-zinc-600">
+              {log.details ?? "—"}
+            </td>
+
+            <td className="px-6 py-4 text-sm text-zinc-600">
+              {new Date(log.created_at).toLocaleString()}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+export default function AuditLogsPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -33,86 +117,9 @@ export default async function AuditLogsPage() {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-        {logs.length === 0 ? (
-          <div className="p-6 text-sm text-zinc-500">
-            No audit logs found.
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead className="border-b border-zinc-200 bg-zinc-50">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
-                  Event
-                </th>
-
-                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
-                  Customer
-                </th>
-
-                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
-                  Intent
-                </th>
-
-                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
-                  Result
-                </th>
-
-                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
-                  Details
-                </th>
-
-                <th className="px-6 py-4 text-left text-sm font-medium text-zinc-500">
-                  Created
-                </th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-zinc-200">
-              {logs.map((log) => (
-                <tr
-                  key={log.id}
-                  className="hover:bg-zinc-50"
-                >
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-zinc-900">
-                      {formatAction(log.action)}
-                    </p>
-
-                    <p className="mt-1 text-sm text-zinc-500">
-                      Log #{log.id}
-                    </p>
-                  </td>
-
-                  <td className="px-6 py-4 text-sm text-zinc-600">
-                    <p>Customer #{log.customer_id}</p>
-
-                    {log.account_id && (
-                      <p className="mt-1 text-zinc-500">
-                        {log.account_id}
-                      </p>
-                    )}
-                  </td>
-
-                  <td className="px-6 py-4 text-sm text-zinc-600">
-                    {log.intent ?? "—"}
-                  </td>
-
-                  <td className="px-6 py-4">
-                    <StatusBadge status={log.result} />
-                  </td>
-
-                  <td className="px-6 py-4 text-sm text-zinc-600">
-                    {log.details ?? "—"}
-                  </td>
-
-                  <td className="px-6 py-4 text-sm text-zinc-600">
-                    {new Date(log.created_at).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <Suspense fallback={<TableSkeleton />}>
+          <AuditLogsTable />
+        </Suspense>
       </div>
     </div>
   );

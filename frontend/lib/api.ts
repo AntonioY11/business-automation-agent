@@ -62,6 +62,7 @@ export type Customer = {
 export type Approval = {
   id: number;
   customer_id: number;
+  request_id: number | null;
   intent: string;
   account_id: string | null;
   new_address: string | null;
@@ -104,20 +105,20 @@ export async function getRequest(id: number): Promise<Request> {
 
 
 export async function getCustomers(): Promise<Customer[]> {
-  const response = await fetch(`${API_URL}/customers`);
+  const response = await apiFetch(`/customers`);
 
   if (!response.ok) {
-    throw new Error("Failed to fetch customers");
+    throw await failure(response, "Failed to fetch customers");
   }
 
   return response.json();
 }
 
 export async function getCustomer(id: number): Promise<Customer> {
-  const response = await fetch(`${API_URL}/customers/${id}`);
+  const response = await apiFetch(`/customers/${id}`);
 
   if (!response.ok) {
-    throw new Error("Failed to fetch customer");
+    throw await failure(response, "Failed to fetch customer");
   }
 
   return response.json();
@@ -126,64 +127,68 @@ export async function getCustomer(id: number): Promise<Customer> {
 export async function getCustomerRequests(
   customerId: number
 ): Promise<Request[]> {
-  const response = await fetch(
-    `${API_URL}/customers/${customerId}/requests`
+  const response = await apiFetch(
+    `/customers/${customerId}/requests`
   );
 
   if (!response.ok) {
-    throw new Error("Failed to fetch customer requests");
+    throw await failure(response, "Failed to fetch customer requests");
   }
 
   return response.json();
 }
 
 
-export async function getApprovals(): Promise<Approval[]> {
-  const response = await fetch(`${API_URL}/approvals`);
+export async function getApprovals(status?: string): Promise<Approval[]> {
+  const query = status ? `?status=${status}` : "";
+  const response = await apiFetch(`/approvals${query}`);
 
   if (!response.ok) {
-    throw new Error("Failed to fetch approvals");
+    throw await failure(response, "Failed to fetch approvals");
   }
 
   return response.json();
 }
 
 
-export async function approveApproval(id: number) {
-  const response = await fetch(
-    `${API_URL}/approvals/${id}/approve`,
-    {
-      method: "POST",
-    }
-  );
+export type ApprovalActionResult = {
+  success: boolean;
+  message: string;
+};
+
+export async function approveApproval(
+  id: number
+): Promise<ApprovalActionResult> {
+  const response = await apiFetch(`/approvals/${id}/approve`, {
+    method: "POST",
+  });
 
   if (!response.ok) {
-    throw new Error("Failed to approve approval");
+    throw await failure(response, "Failed to approve approval");
   }
 
   return response.json();
 }
 
-export async function rejectApproval(id: number) {
-  const response = await fetch(
-    `${API_URL}/approvals/${id}/reject`,
-    {
-      method: "POST",
-    }
-  );
+export async function rejectApproval(
+  id: number
+): Promise<ApprovalActionResult> {
+  const response = await apiFetch(`/approvals/${id}/reject`, {
+    method: "POST",
+  });
 
   if (!response.ok) {
-    throw new Error("Failed to reject approval");
+    throw await failure(response, "Failed to reject approval");
   }
 
   return response.json();
 }
 
 export async function getAuditLogs(): Promise<AuditLog[]> {
-  const response = await fetch(`${API_URL}/audit-logs`);
+  const response = await apiFetch(`/audit-logs`);
 
   if (!response.ok) {
-    throw new Error("Failed to fetch audit logs");
+    throw await failure(response, "Failed to fetch audit logs");
   }
 
   return response.json();

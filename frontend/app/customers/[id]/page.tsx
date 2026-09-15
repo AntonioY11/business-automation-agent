@@ -1,5 +1,10 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
+
 import {
+  ApiError,
+  Customer,
+  Request,
   getCustomer,
   getCustomerRequests,
 } from "@/lib/api";
@@ -33,8 +38,25 @@ export default async function CustomerDetailsPage({
   const { id } = await params;
   const customerId = Number(id);
 
-  const customer = await getCustomer(customerId);
-  const requests = await getCustomerRequests(customerId);
+  if (!Number.isInteger(customerId) || customerId < 1) {
+    notFound();
+  }
+
+  let customer: Customer;
+  let requests: Request[];
+
+  try {
+    [customer, requests] = await Promise.all([
+      getCustomer(customerId),
+      getCustomerRequests(customerId),
+    ]);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      notFound();
+    }
+
+    throw error;
+  }
 
   return (
     <div className="p-8">

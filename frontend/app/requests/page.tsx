@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { getRequests, Request } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
+import TableSkeleton from "@/components/TableSkeleton";
 
 function getPriorityClass(priority: string | null) {
   switch (priority) {
@@ -19,27 +20,6 @@ function getPriorityClass(priority: string | null) {
     default:
       return "bg-zinc-100 text-zinc-700";
   }
-}
-
-function TableSkeleton() {
-  return (
-    <div className="divide-y divide-zinc-200">
-      {[0, 1, 2, 3, 4].map((row) => (
-        <div
-          key={row}
-          className="flex items-center justify-between px-6 py-5"
-        >
-          <div className="w-1/2 space-y-2">
-            <div className="h-4 w-3/4 animate-pulse rounded bg-zinc-200" />
-
-            <div className="h-3 w-24 animate-pulse rounded bg-zinc-200" />
-          </div>
-
-          <div className="h-6 w-20 animate-pulse rounded-full bg-zinc-200" />
-        </div>
-      ))}
-    </div>
-  );
 }
 
 async function RequestsTable() {

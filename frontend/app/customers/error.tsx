@@ -17,8 +17,8 @@ export default function Error({
 
   return (
     <ErrorState
-      heading="Requests"
-      message="Could not load requests"
+      heading="Customers"
+      message="Could not load customers"
       digest={error.digest}
       onRetry={retry}
     />
