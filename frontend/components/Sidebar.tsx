@@ -1,4 +1,27 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const LINKS = [
+  { href: "/", label: "Dashboard" },
+  { href: "/requests", label: "Requests" },
+  { href: "/customers", label: "Customers" },
+  { href: "/approvals", label: "Approvals" },
+  { href: "/audit-logs", label: "Audit Logs" },
+];
+
 export default function Sidebar() {
+  const pathname = usePathname();
+
+  function isActive(href: string) {
+    if (href === "/") {
+      return pathname === "/";
+    }
+
+    return pathname === href || pathname.startsWith(`${href}/`);
+  }
+
   return (
     <aside className="w-64 border-r border-zinc-200 bg-white p-6">
       <div className="mb-10">
@@ -12,40 +35,20 @@ export default function Sidebar() {
       </div>
 
       <nav className="space-y-2">
-        <a
-          href="/"
-          className="block rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white"
-        >
-          Dashboard
-        </a>
-
-        <a
-          href="/requests"
-          className="block rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100"
-        >
-          Requests
-        </a>
-
-        <a
-          href="/customers"
-          className="block rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100"
-        >
-          Customers
-        </a>
-
-        <a
-          href="/approvals"
-          className="block rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100"
-        >
-          Approvals
-        </a>
-
-        <a
-          href="/audit-logs"
-          className="block rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100"
-        >
-          Audit Logs
-        </a>
+        {LINKS.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            aria-current={isActive(link.href) ? "page" : undefined}
+            className={`block rounded-lg px-4 py-2.5 text-sm font-medium ${
+              isActive(link.href)
+                ? "bg-zinc-900 text-white"
+                : "text-zinc-600 hover:bg-zinc-100"
+            }`}
+          >
+            {link.label}
+          </Link>
+        ))}
       </nav>
     </aside>
   );
