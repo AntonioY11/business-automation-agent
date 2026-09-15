@@ -143,3 +143,19 @@ def test_approval_is_executed_only_once(client, db, monkeypatch):
     assert client.post(f"/approvals/{approval.id}/approve").status_code == 200
     assert client.post(f"/approvals/{approval.id}/approve").status_code == 409
     assert db.query(Refund).count() == 1
+
+
+def test_approvals_list_includes_decided_approvals(client, db, monkeypatch):
+    seed(db, 1, "ACC-1", "list@example.com")
+    stub_analysis(monkeypatch)
+
+    client.post("/requests", json={"customer_id": 1, "raw_text": "refund"})
+    approval = db.query(Approval).one()
+    client.post(f"/approvals/{approval.id}/approve")
+
+    listed = client.get("/approvals").json()
+
+    assert [item["status"] for item in listed] == ["approved"]
+
+    assert client.get("/approvals?status=pending").json() == []
+    assert len(client.get("/approvals?status=approved").json()) == 1

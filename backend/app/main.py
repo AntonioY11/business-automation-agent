@@ -127,14 +127,16 @@ def get_account(account_id: str, db: Session = Depends(get_db)):
 
 
 @app.get("/approvals")
-def get_pending_approvals(
+def get_approvals(
+    status: str | None = None,
     db: Session = Depends(get_db),
 ):
-    approvals = db.query(Approval).filter(
-        Approval.status == "pending"
-    ).all()
+    query = db.query(Approval)
 
-    return approvals
+    if status is not None:
+        query = query.filter(Approval.status == status)
+
+    return query.order_by(Approval.id.desc()).all()
 
 
 def _load_pending_approval(approval_id: int, db: Session):
